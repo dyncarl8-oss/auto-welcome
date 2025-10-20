@@ -4,6 +4,9 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  // Use relative asset base by default to support proxy/iframe embedding (e.g., Whop)
+  // Can be overridden via env VITE_BASE
+  base: process.env.VITE_BASE ?? "./",
   plugins: [
     react(),
     runtimeErrorOverlay(),

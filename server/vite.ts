@@ -79,7 +79,23 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  app.use("*", (req, res) => {
+    // Read the built index.html and rewrite asset URLs to absolute URLs based on request host.
+    // This ensures assets load correctly when the app is proxied/embedded under a different origin/path.
+    const indexFilePath = path.resolve(distPath, "index.html");
+    let html = fs.readFileSync(indexFilePath, "utf-8");
+
+    const forwardedProto = (req.headers["x-forwarded-proto"] as string | undefined)?.split(",")[0];
+    const proto = forwardedProto || req.protocol || "https";
+    const host = (req.headers["x-forwarded-host"] as string | undefined) || req.headers.host || "";
+    const assetBase = host ? `${proto}://${host}` : "";
+
+    if (assetBase) {
+      // Replace href/src that start with /assets/ to absolute URLs so they don't resolve against a proxy origin.
+      html = html.replace(/(href|src)="\/assets\//g, `$1="${assetBase}/assets/`);
+    }
+
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
   });
 }
