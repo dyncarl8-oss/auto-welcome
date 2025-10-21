@@ -1316,7 +1316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WHOP WEBHOOKS
   // ============================================================================
 
-  // Whop webhook handler for membership.went_valid event
+  // Whop webhook handler - listens for multiple membership events
   app.post("/api/whop/webhook", async (req, res) => {
     try {
       console.log("=== WHOP WEBHOOK RECEIVED ===");
@@ -1369,16 +1369,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📥 Received Whop webhook action: ${action}`);
 
-      // Handle new member joining - membership.went_valid event
-      if (action === "membership.went_valid") {
+      // Handle new member joining - supports both membership_went_valid and app_membership_went_valid
+      if (action === "membership_went_valid" || action === "app_membership_went_valid") {
         console.log(`📋 Webhook data - status_reason: ${data?.status_reason || 'not provided'}, status: ${data?.status}`);
+        
+        // Log the full data object to debug what fields are available
+        console.log("📋 Full webhook data object:", JSON.stringify(data, null, 2));
         
         const memberId = data.id;
         const userId = data.user_id || data.user?.id;
         const email = data.user?.email;
         const planName = data.access_pass?.name || data.plan?.id || data.plan_id;
         const productId = data.product_id;
-        const companyId = data.company?.id || data.company_id;
+        
+        // Try multiple possible locations for company_id
+        let companyId = data.company?.id || data.company_id || data.biz_id || data.business_id;
+        
+        // If still no company_id, try to fetch it from the membership
+        if (!companyId && memberId) {
+          console.log("📋 No company_id in webhook payload, attempting to fetch from membership...");
+          try {
+            const membership = await whopSdk.memberships.getMembership({ id: memberId });
+            console.log("📋 Fetched membership:", JSON.stringify(membership, null, 2));
+            companyId = membership.company_id || membership.company?.id;
+          } catch (membershipError) {
+            console.error("❌ Error fetching membership:", membershipError);
+          }
+        }
 
         if (!memberId || !userId) {
           console.error("Missing memberId or userId in webhook payload");
@@ -1406,8 +1423,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // MULTI-TENANT FIX: Match creator by company ID, not first available
         if (!companyId) {
-          console.error("⚠️ No company ID in webhook - cannot match to creator");
-          return res.status(200).json({ success: true, message: "No company ID in webhook" });
+          console.error("⚠️ No company ID found in webhook or membership - falling back to first setup creator");
+          console.error("⚠️ This may cause issues in multi-tenant setups!");
+          
+          // Fallback: Use the first creator with completed setup
+          const allCreators = await storage.getAllCreators();
+          const setupCreator = allCreators.find(c => c.isSetupComplete);
+          
+          if (!setupCreator) {
+            console.error("❌ No setup complete creator found");
+            return res.status(200).json({ success: true, message: "No creator setup yet" });
+          }
+          
+          companyId = setupCreator.whopCompanyId;
+          console.log(`📋 Using fallback creator with company ID: ${companyId}`);
         }
 
         console.log(`🔍 Looking for creator with company ID: ${companyId}`);
