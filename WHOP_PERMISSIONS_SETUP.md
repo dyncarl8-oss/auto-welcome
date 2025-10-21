@@ -133,7 +133,7 @@ When other creators install your AutoWelcome AI app on their Whop companies:
 
 **Solution**:
 1. Check that `membership:read` permission is approved
-2. Verify webhook is set to receive `membership.went_valid` events
+2. Verify webhook is set to receive `add-member` events
 3. Check the app logs for detailed error messages
 
 ---

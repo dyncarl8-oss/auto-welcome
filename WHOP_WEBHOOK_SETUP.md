@@ -6,7 +6,7 @@ Your AutoWelcome AI app wasn't sending DMs to new members because Whop needs to 
 
 ## Solution
 
-I've updated your app to handle Whop's `membership.went_valid` webhook event. Now you just need to configure the webhook in your Whop dashboard.
+I've updated your app to handle Whop's `add-member` webhook event (which is more reliable than `membership.went_valid`). Now you just need to configure the webhook in your Whop dashboard.
 
 ---
 
@@ -34,7 +34,7 @@ But for production, always use your published Replit HTTPS URL.
 2. Navigate to **Settings** → **Webhooks**
 3. Click **Create Webhook** or **Add Webhook**
 4. Enter your webhook URL: `https://your-replit-url.replit.app/api/whop/webhook`
-5. Select the event: **Membership Went Valid**
+5. Select the event: **Add Member**
 6. Enable the webhook
 7. Save
 
@@ -49,7 +49,7 @@ curl --request POST \
   --data '{
     "url": "https://your-replit-url.replit.app/api/whop/webhook",
     "enabled": true,
-    "events": ["membership.went_valid"]
+    "events": ["add-member"]
   }'
 ```
 
@@ -57,7 +57,7 @@ curl --request POST \
 
 After setting up:
 1. Use the "Test Webhook" button in your Whop dashboard
-2. Check your server logs for: `Received Whop webhook: membership.went_valid`
+2. Check your server logs for: `Received Whop webhook: add-member`
 3. If you see this message, the webhook is working!
 
 ### 4. Test with a Real Member
@@ -92,7 +92,7 @@ When a new member joins, Whop sends this payload:
 
 ```json
 {
-  "action": "membership.went_valid",
+  "action": "add-member",
   "data": {
     "id": "mem_XXXX",
     "status_reason": "created",
@@ -129,7 +129,7 @@ Your app now correctly handles this format!
 
 3. **Check server logs:**
    ```
-   Received Whop webhook: membership.went_valid
+   Received Whop webhook: add-member
    New member joined: [username]
    ```
    - If you see these, the webhook is working
@@ -182,7 +182,7 @@ HEYGEN_WEBHOOK_SECRET=your_heygen_webhook_secret (optional)
 Watch your logs for these key messages:
 
 ✅ **Success indicators:**
-- `Received Whop webhook: membership.went_valid`
+- `Received Whop webhook: add-member`
 - `New member joined: [username]`
 - `HeyGen video generation started for [username]: [video_id]`
 - `Video [video_id] sent to [name] via DM`

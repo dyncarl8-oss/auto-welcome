@@ -1316,7 +1316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WHOP WEBHOOKS
   // ============================================================================
 
-  // Whop webhook handler for membership.went_valid event
+  // Whop webhook handler for add-member event
   app.post("/api/whop/webhook", async (req, res) => {
     try {
       console.log("=== WHOP WEBHOOK RECEIVED ===");
@@ -1369,8 +1369,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📥 Received Whop webhook action: ${action}`);
 
-      // Handle new member joining - membership.went_valid event
-      if (action === "membership.went_valid") {
+      // Handle new member joining - add-member event (more reliable than membership.went_valid)
+      if (action === "add-member") {
         console.log(`📋 Webhook data - status_reason: ${data?.status_reason || 'not provided'}, status: ${data?.status}`);
         
         const memberId = data.id;
