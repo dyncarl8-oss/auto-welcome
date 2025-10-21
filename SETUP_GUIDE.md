@@ -59,7 +59,7 @@ HEYGEN_API_KEY=your_heygen_key_here
 4. Click **Add Webhook** or **Create Webhook**
 5. Enter these details:
    - **URL**: `https://your-replit-app-url.replit.app/api/whop/webhook`
-   - **Events**: Select `add-member`
+   - **Events**: Select `membership_went_valid` and `app_membership_went_valid`
    - **Secret**: `ws_4c187f951d819fb5c1a12f2b14dce2df5a3edaf3ef9be95ab1bf9428c9df6299`
 6. Save and enable the webhook
 
@@ -117,7 +117,7 @@ If you see these, the names ARE being fetched. The issue is likely:
 4. **Common issues**:
    - ✗ Wrong webhook URL (must be `/api/whop/webhook`)
    - ✗ Webhook secret doesn't match
-   - ✗ Wrong event selected (must be `add-member`)
+   - ✗ Wrong event selected (must be `membership_went_valid` or `app_membership_went_valid`)
    - ✗ Webhook not enabled in Whop dashboard
 
 ### DMs Not Sending?
@@ -211,7 +211,7 @@ Failed to send DM
 - [ ] Environment variables set in Replit Secrets
 - [ ] Webhook configured in Whop dashboard with correct URL
 - [ ] Webhook secret matches between app and Whop
-- [ ] Event `add-member` selected
+- [ ] Events `membership_went_valid` and `app_membership_went_valid` selected
 - [ ] Webhook enabled in Whop dashboard
 - [ ] App installed in a Whop community
 - [ ] Test webhook endpoint returns success

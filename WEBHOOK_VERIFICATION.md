@@ -19,7 +19,7 @@ Your app had an **inconsistency in DM sending methods**:
 2. Navigate to **Developer → Webhooks** (or **Settings → Webhooks**)
 3. Verify you have a webhook configured:
    - **URL**: `https://your-app-url/api/whop/webhook`
-   - **Event**: `add-member`
+   - **Event**: `membership_went_valid` or `app_membership_went_valid`
    - **Status**: Enabled ✅
 
 #### HeyGen Webhook (Optional, you have polling as backup)
@@ -87,7 +87,7 @@ If any are missing, the app **won't send videos** even if webhooks work.
 
 ```
 === WHOP WEBHOOK RECEIVED ===
-📥 Received Whop webhook action: add-member
+📥 Received Whop webhook action: membership_went_valid
 ✅ Found creator for company [company_id]
 Created customer record for [Name]
 🎥 Calling HeyGen Avatar IV API...
@@ -200,7 +200,7 @@ If you want to send another video:
 ```
 ✅ Connected to MongoDB
 🔄 Video polling service started
-Received Whop webhook: add-member
+Received Whop webhook: membership_went_valid
 ✅ Found creator for company
 HeyGen video generation started
 Video [id] status: completed
