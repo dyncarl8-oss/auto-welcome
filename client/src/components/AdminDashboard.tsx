@@ -473,7 +473,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
           </h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            Manage your automated video welcomes
+            Manage automated welcome videos
           </p>
         </div>
 
@@ -846,7 +846,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 <div>
                   <h2 className="text-lg font-semibold">Members</h2>
                   <p className="text-sm text-muted-foreground">
-                    Manage members and track welcome video delivery
+                    Track members and their welcome video status
                   </p>
                 </div>
               </div>
