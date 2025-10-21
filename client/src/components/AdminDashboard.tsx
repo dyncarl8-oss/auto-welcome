@@ -266,10 +266,9 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
         return;
       }
       setSelectedFile(file);
-      // Create preview URL immediately
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
     }
+    // Reset the input so the same file can be selected again
+    e.target.value = '';
   };
 
   const handleAudioFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -499,13 +498,13 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent" data-testid="stat-total-customers">
                     {analyticsData?.totalCustomers || 0}
                   </div>
                   {analyticsData?.newMembersThisWeek ? (
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-chart-2/15">
-                      <span className="text-sm font-bold text-chart-2">+{analyticsData.newMembersThisWeek}</span>
+                    <div className="inline-flex items-center px-1.5 py-0.5 rounded bg-chart-2/10 border border-chart-2/20">
+                      <span className="text-xs font-semibold text-chart-2">+{analyticsData.newMembersThisWeek}</span>
                     </div>
                   ) : null}
                 </div>
