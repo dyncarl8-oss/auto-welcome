@@ -91,6 +91,13 @@ export default function CustomerView() {
           description: "Your personalized video is being generated. This usually takes 1-2 minutes.",
           gradient: "from-chart-3/20 to-chart-3/5",
         };
+      case "failed":
+        return {
+          icon: <Video className="h-16 w-16 text-destructive" />,
+          title: "Video Generation Issue",
+          description: "There was an issue creating your video. You can try again below.",
+          gradient: "from-destructive/20 to-destructive/5",
+        };
       default:
         return {
           icon: <Video className="h-16 w-16 text-primary" />,
@@ -190,6 +197,7 @@ export default function CustomerView() {
                 disabled={triggerTestVideoMutation.isPending || status?.videoStatus === "generating"}
                 className="w-full"
                 size="lg"
+                variant={status?.videoStatus === "failed" ? "destructive" : "default"}
                 data-testid="button-trigger-test-video"
               >
                 {triggerTestVideoMutation.isPending ? (
@@ -202,6 +210,11 @@ export default function CustomerView() {
                     <Clock className="h-4 w-4 mr-2 animate-pulse" />
                     Video Being Generated...
                   </>
+                ) : status?.videoStatus === "failed" ? (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Retry Video Generation
+                  </>
                 ) : (
                   <>
                     <Play className="h-4 w-4 mr-2" />
@@ -210,7 +223,7 @@ export default function CustomerView() {
                 )}
               </Button>
               
-              {(status?.videoStatus === "generating" || status?.hasWelcomeVideo) && (
+              {(status?.videoStatus === "generating" || status?.videoStatus === "failed" || status?.hasWelcomeVideo) && (
                 <Button
                   onClick={() => resetTestStatusMutation.mutate()}
                   disabled={resetTestStatusMutation.isPending}

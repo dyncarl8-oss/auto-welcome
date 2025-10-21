@@ -80,7 +80,7 @@ async function triggerVideoGenerationForCustomer(customerId: string, creatorId: 
           const { audio_url } = await heygenSdk.uploadAudio(
             audioBlob,
             `fish-audio-${Date.now()}.mp3`,
-            'audio/mp3'
+            'audio/mpeg'  // HeyGen expects audio/mpeg, not audio/mp3
           );
 
           const result = await heygenSdk.generateAvatarIVWithAudio({
@@ -92,20 +92,40 @@ async function triggerVideoGenerationForCustomer(customerId: string, creatorId: 
           video_id = result.video_id;
           usedFishAudio = true;
         }
-      } catch (fishError) {
-        console.error(`⚠️ Fish Audio failed:`, fishError);
+      } catch (fishError: any) {
+        console.error(`⚠️ Fish Audio or HeyGen audio upload failed:`, fishError);
+        
+        // Check if it's a HeyGen plan limitation error
+        if (fishError?.message?.includes('API Pro plan') || fishError?.message?.includes('400599')) {
+          console.log(`⚠️ HeyGen plan doesn't support custom audio - falling back to text-to-speech`);
+        }
       }
     }
 
+    // Try uploaded audio file if available (and Fish Audio didn't work)
     if (!usedFishAudio && creator.useAudioForGeneration && creator.audioFileUrl) {
-      const result = await heygenSdk.generateAvatarIVWithAudio({
-        avatar_image_url: creator.avatarPhotoUrl,
-        input_audio_url: creator.audioFileUrl,
-        test: true,
-        title: `Welcome video for ${customer.name}`,
-      });
-      video_id = result.video_id;
-    } else if (!usedFishAudio) {
+      try {
+        const result = await heygenSdk.generateAvatarIVWithAudio({
+          avatar_image_url: creator.avatarPhotoUrl,
+          input_audio_url: creator.audioFileUrl,
+          test: true,
+          title: `Welcome video for ${customer.name}`,
+        });
+        video_id = result.video_id;
+        usedFishAudio = true; // Mark as used to skip text-to-speech
+      } catch (audioError: any) {
+        console.error(`⚠️ HeyGen audio generation failed:`, audioError);
+        
+        // Check if it's a plan limitation
+        if (audioError?.message?.includes('API Pro plan') || audioError?.message?.includes('400599')) {
+          console.log(`⚠️ HeyGen plan doesn't support custom audio - falling back to text-to-speech`);
+        }
+      }
+    }
+    
+    // Fallback to text-to-speech if audio methods failed or aren't available
+    if (!usedFishAudio) {
+      console.log(`🎤 Using HeyGen text-to-speech (default voice)`);
       const result = await heygenSdk.generateAvatarIVVideo({
         avatar_image_url: creator.avatarPhotoUrl,
         input_text: personalizedScript,
