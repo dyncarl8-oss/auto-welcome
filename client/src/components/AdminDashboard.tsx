@@ -605,13 +605,17 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {previewUrl && (
+                {(previewUrl || creator?.avatarPhotoUrl) && (
                   <div className="relative w-40 h-40 rounded-lg overflow-hidden border-2 border-primary/20 mx-auto shadow-xl ring-4 ring-primary/10">
                     <img 
-                      src={previewUrl} 
+                      src={previewUrl || creator?.avatarPhotoUrl || ""} 
                       alt="Avatar preview" 
                       className="w-full h-full object-cover"
                       data-testid="img-avatar-preview"
+                      onError={(e) => {
+                        console.error("Avatar image failed to load:", previewUrl || creator?.avatarPhotoUrl);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                     {selectedFile && (
                       <div className="absolute top-2 right-2">
@@ -701,19 +705,30 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                       )}
                     </div>
                     
-                    <div className="p-4 rounded-md bg-muted/30 border">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Music className="h-5 w-5 text-primary" />
-                        <span className="text-sm font-medium">Training Audio</span>
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="p-2 rounded-md bg-primary/10">
+                          <Music className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="text-sm font-semibold">Training Audio Sample</span>
                       </div>
-                      <audio 
-                        controls 
-                        className="w-full mt-2"
-                        data-testid="audio-training-sample"
-                        src={creator.audioFileUrl}
-                      >
-                        Your browser does not support the audio element.
-                      </audio>
+                      <div className="bg-background/50 backdrop-blur-sm rounded-lg p-3 border border-primary/10">
+                        <audio 
+                          controls 
+                          className="w-full h-10 [&::-webkit-media-controls-panel]:bg-background [&::-webkit-media-controls-play-button]:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
+                          data-testid="audio-training-sample"
+                          src={creator.audioFileUrl}
+                          style={{
+                            filter: 'drop-shadow(0 1px 2px rgb(0 0 0 / 0.1))'
+                          }}
+                        >
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3 text-chart-2" />
+                        Voice model successfully trained with this audio
+                      </p>
                     </div>
                   </div>
                 )}
