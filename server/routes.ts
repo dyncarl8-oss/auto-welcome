@@ -12,6 +12,123 @@ import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
 
+// Helper function to trigger video generation for a customer
+async function triggerVideoGenerationForCustomer(customerId: string, creatorId: string) {
+  try {
+    const customer = await storage.getCustomer(customerId);
+    const creator = await storage.getCreator(creatorId);
+
+    if (!customer || !creator) {
+      console.error(`❌ Customer or creator not found`);
+      return null;
+    }
+
+    if (!creator.isSetupComplete) {
+      console.log(`⚠️ Creator setup not complete, skipping video generation`);
+      return null;
+    }
+
+    // Check if customer already has videos
+    const existingVideos = await storage.getVideosByCustomer(customerId);
+    if (existingVideos.length > 0) {
+      console.log(`Customer ${customer.name} already has videos, skipping`);
+      return null;
+    }
+
+    console.log(`🎬 Triggering video generation for ${customer.name}`);
+
+    // Generate personalized script
+    const personalizedScript = replacePlaceholders(creator.messageTemplate, {
+      name: customer.name,
+      email: customer.email,
+      username: customer.username,
+      planName: customer.planName,
+    });
+
+    // Create video record
+    const video = await storage.createVideo({
+      customerId: customer._id,
+      creatorId: creator._id,
+      personalizedScript,
+      status: VIDEO_STATUSES.GENERATING,
+      viewCount: 0,
+      updatedAt: new Date(),
+    });
+
+    // Generate video with HeyGen
+    let video_id: string;
+
+    if (!creator.avatarPhotoUrl) {
+      throw new Error("Avatar photo URL not found");
+    }
+
+    // Try Fish Audio TTS first if available
+    let usedFishAudio = false;
+    if (creator.fishAudioModelId) {
+      try {
+        const modelStatus = await fishAudioSdk.getModel(creator.fishAudioModelId);
+        
+        if (modelStatus.state === 'trained') {
+          console.log(`🐟 Using Fish Audio TTS`);
+          const audioBuffer = await fishAudioSdk.generateSpeech({
+            text: personalizedScript,
+            referenceId: creator.fishAudioModelId,
+            format: 'mp3',
+          });
+
+          const audioBlob = Buffer.from(audioBuffer);
+          const { audio_url } = await heygenSdk.uploadAudio(
+            audioBlob,
+            `fish-audio-${Date.now()}.mp3`,
+            'audio/mp3'
+          );
+
+          const result = await heygenSdk.generateAvatarIVWithAudio({
+            avatar_image_url: creator.avatarPhotoUrl,
+            input_audio_url: audio_url,
+            test: true,
+            title: `Welcome video for ${customer.name}`,
+          });
+          video_id = result.video_id;
+          usedFishAudio = true;
+        }
+      } catch (fishError) {
+        console.error(`⚠️ Fish Audio failed:`, fishError);
+      }
+    }
+
+    if (!usedFishAudio && creator.useAudioForGeneration && creator.audioFileUrl) {
+      const result = await heygenSdk.generateAvatarIVWithAudio({
+        avatar_image_url: creator.avatarPhotoUrl,
+        input_audio_url: creator.audioFileUrl,
+        test: true,
+        title: `Welcome video for ${customer.name}`,
+      });
+      video_id = result.video_id;
+    } else if (!usedFishAudio) {
+      const result = await heygenSdk.generateAvatarIVVideo({
+        avatar_image_url: creator.avatarPhotoUrl,
+        input_text: personalizedScript,
+        voice_id: creator.voiceId || "1bd001e7e50f421d891986aad5158bc8",
+        test: true,
+        title: `Welcome video for ${customer.name}`,
+      });
+      video_id = result.video_id;
+    }
+
+    await storage.updateVideo(video._id, {
+      heygenVideoId: video_id,
+      status: VIDEO_STATUSES.GENERATING,
+    });
+
+    console.log(`✅ Video generation started for ${customer.name}: ${video_id}`);
+    return video;
+  } catch (error) {
+    console.error(`❌ Error triggering video generation:`, error);
+    return null;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create uploads directory if it doesn't exist
   const uploadsDir = path.join(process.cwd(), 'uploads', 'avatars');
@@ -121,6 +238,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (creatorError) {
             console.error("Error fetching creator for company ID:", creatorError);
           }
+        }
+      }
+
+      // 🎬 AUTO-GENERATE VIDEO ON FIRST VISIT (for customers only)
+      // This is a reliable alternative to webhooks that works every time!
+      if (result.hasAccess && result.accessLevel === "customer" && companyId) {
+        try {
+          console.log(`👋 Customer ${userName} visiting app - checking if video needed...`);
+          
+          // Get creator for this company
+          const creator = await storage.getCreatorByCompanyId(companyId);
+          
+          if (creator && creator.isSetupComplete) {
+            // Check if customer record exists
+            let customer = await storage.getCustomerByWhopUserId(creator._id, userId);
+            
+            if (!customer) {
+              // First time this customer is visiting - create record
+              console.log(`🆕 First visit for ${userName} - creating customer record`);
+              
+              // Get user email if available
+              let userEmail = null;
+              try {
+                const fullUserDetails = await whopSdk.users.getUser({ userId });
+                userEmail = (fullUserDetails as any).email || null;
+              } catch (e) {
+                console.log("Could not fetch user email");
+              }
+              
+              customer = await storage.createCustomer({
+                creatorId: creator._id,
+                whopUserId: userId,
+                whopMemberId: `member_${userId}`,
+                whopCompanyId: companyId,
+                name: userName || "Member",
+                email: userEmail,
+                username: username,
+                planName: null,
+                joinedAt: new Date(),
+                firstVideoSent: false,
+                updatedAt: new Date(),
+              });
+              
+              console.log(`✅ Customer record created for ${userName}`);
+              
+              // Trigger video generation in background (don't wait for it)
+              triggerVideoGenerationForCustomer(customer._id, creator._id).catch(err => {
+                console.error(`Error in background video generation:`, err);
+              });
+            } else {
+              // Customer exists - check if they need a video
+              const existingVideos = await storage.getVideosByCustomer(customer._id);
+              if (existingVideos.length === 0) {
+                console.log(`🎬 ${userName} has no videos - triggering generation`);
+                triggerVideoGenerationForCustomer(customer._id, creator._id).catch(err => {
+                  console.error(`Error in background video generation:`, err);
+                });
+              }
+            }
+          }
+        } catch (autoGenError) {
+          // Log error but don't fail the validation request
+          console.error("Error in auto video generation:", autoGenError);
         }
       }
 
@@ -1661,6 +1841,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching welcome status:", error);
       return res.status(500).json({ error: "Failed to fetch welcome status" });
+    }
+  });
+
+  // Manual trigger for customers to generate their welcome video
+  app.post("/api/customer/generate-my-video", async (req, res) => {
+    try {
+      const userToken = req.headers["x-whop-user-token"] as string;
+      if (!userToken) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const { userId } = await whopSdk.verifyUserToken(userToken);
+      
+      console.log(`🎬 User ${userId} manually requesting video generation`);
+
+      // Find which creator/company this user belongs to
+      const allCreators = await storage.getAllCreators();
+      let customer: Customer | undefined;
+      let creator: Creator | undefined;
+      
+      for (const c of allCreators) {
+        const cust = await storage.getCustomerByWhopUserId(c._id, userId);
+        if (cust) {
+          customer = cust;
+          creator = c;
+          break;
+        }
+      }
+
+      if (!customer || !creator) {
+        return res.status(404).json({ 
+          error: "No customer record found. Please visit the app first." 
+        });
+      }
+
+      if (!creator.isSetupComplete) {
+        return res.status(400).json({ 
+          error: "The creator hasn't finished setting up the app yet. Please try again later." 
+        });
+      }
+
+      // Check if video already exists
+      const existingVideos = await storage.getVideosByCustomer(customer._id);
+      if (existingVideos.length > 0) {
+        return res.status(400).json({ 
+          error: "You already have a welcome video! Check your DMs.",
+          hasVideo: true
+        });
+      }
+
+      // Trigger video generation
+      const video = await triggerVideoGenerationForCustomer(customer._id, creator._id);
+
+      if (video) {
+        return res.json({
+          success: true,
+          message: "Your welcome video is being created! You'll receive a DM in 1-2 minutes.",
+          videoId: video._id
+        });
+      } else {
+        return res.status(500).json({ 
+          error: "Failed to start video generation. Please try again or contact support." 
+        });
+      }
+    } catch (error) {
+      console.error("Error in manual video generation:", error);
+      return res.status(500).json({ 
+        error: "Failed to generate video. Please try again later." 
+      });
     }
   });
 
