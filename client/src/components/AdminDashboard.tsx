@@ -266,6 +266,9 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
         return;
       }
       setSelectedFile(file);
+      // Create preview URL immediately
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
     }
   };
 
@@ -496,15 +499,19 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent" data-testid="stat-total-customers">
-                  {analyticsData?.totalCustomers || 0}
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent" data-testid="stat-total-customers">
+                    {analyticsData?.totalCustomers || 0}
+                  </div>
+                  {analyticsData?.newMembersThisWeek ? (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-chart-2/15">
+                      <span className="text-sm font-bold text-chart-2">+{analyticsData.newMembersThisWeek}</span>
+                    </div>
+                  ) : null}
                 </div>
                 {analyticsData?.newMembersThisWeek ? (
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-chart-2/15 text-chart-2 font-semibold">
-                      +{analyticsData.newMembersThisWeek}
-                    </span>
-                    <span>new this week</span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {analyticsData.newMembersThisWeek} new this week
                   </p>
                 ) : null}
               </CardContent>
@@ -705,30 +712,19 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                       )}
                     </div>
                     
-                    <div className="p-4 rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                    <div className="p-4 rounded-lg bg-muted/30 border">
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="p-2 rounded-md bg-primary/10">
-                          <Music className="h-4 w-4 text-primary" />
-                        </div>
-                        <span className="text-sm font-semibold">Training Audio Sample</span>
+                        <Music className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Training Audio</span>
                       </div>
-                      <div className="bg-background/50 backdrop-blur-sm rounded-lg p-3 border border-primary/10">
-                        <audio 
-                          controls 
-                          className="w-full h-10 [&::-webkit-media-controls-panel]:bg-background [&::-webkit-media-controls-play-button]:text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 rounded"
-                          data-testid="audio-training-sample"
-                          src={creator.audioFileUrl}
-                          style={{
-                            filter: 'drop-shadow(0 1px 2px rgb(0 0 0 / 0.1))'
-                          }}
-                        >
-                          Your browser does not support the audio element.
-                        </audio>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3 text-chart-2" />
-                        Voice model successfully trained with this audio
-                      </p>
+                      <audio 
+                        controls 
+                        className="w-full"
+                        data-testid="audio-training-sample"
+                        src={creator.audioFileUrl}
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
                     </div>
                   </div>
                 )}
