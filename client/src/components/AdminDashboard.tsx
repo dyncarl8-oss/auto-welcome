@@ -496,9 +496,21 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent" data-testid="stat-total-customers">
-                  {analyticsData?.totalCustomers || 0}
+                <div className="flex items-baseline gap-2">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent" data-testid="stat-total-customers">
+                    {analyticsData?.totalCustomers || 0}
+                  </div>
+                  {analyticsData?.newMembersThisWeek ? (
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-chart-2/10 text-chart-2">
+                      <span className="text-xs font-semibold">+{analyticsData.newMembersThisWeek}</span>
+                    </div>
+                  ) : null}
                 </div>
+                {analyticsData?.newMembersThisWeek ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {analyticsData.newMembersThisWeek} new this week
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
 

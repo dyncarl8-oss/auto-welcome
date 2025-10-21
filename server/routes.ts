@@ -1296,9 +1296,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const videos = await storage.getVideosByCreator(creator._id);
+      
+      // Calculate new members this week
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      const customers = await storage.getCustomersByCreator(creator._id);
+      const newMembersThisWeek = customers.filter(c => 
+        c.joinedAt && new Date(c.joinedAt) >= oneWeekAgo
+      ).length;
 
       const analytics = {
         totalCustomers,
+        newMembersThisWeek,
         totalVideos: videos.length,
         videosSent: videos.filter(v => v.status === VIDEO_STATUSES.SENT || v.status === VIDEO_STATUSES.DELIVERED || v.status === VIDEO_STATUSES.VIEWED).length,
         videosViewed: videos.filter(v => v.status === VIDEO_STATUSES.VIEWED).length,
