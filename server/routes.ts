@@ -1858,18 +1858,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const messageContent = `Hi ${customer.name}! 🎥 I recorded a personal welcome message just for you. Check it out: ${statusResult.video_url}`;
                 
                 console.log(`📤 Sending DM to user ${customer.whopUserId}...`);
+                console.log(`Message content: ${messageContent}`);
                 
-                // Send direct message using Whop SDK
-                const messageId = await whopSdk.messages.sendDirectMessageToUser({
-                  toUserIdOrUsername: customer.whopUserId,
-                  message: messageContent,
+                // Use customer's user ID as the channel_id for DMs
+                const channelId = customer.whopUserId;
+                
+                const response = await fetch("https://api.whop.com/api/v5/messages", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${process.env.WHOP_API_KEY}`,
+                  },
+                  body: JSON.stringify({
+                    channel_id: channelId,
+                    content: messageContent,
+                  }),
                 });
 
-                console.log(`✅ Message sent successfully to ${customer.name}! Message ID: ${messageId}`);
+                const message = await response.json();
+                
+                if (!response.ok) {
+                  const errorMessage = message?.message || message?.error || "Failed to send DM";
+                  
+                  // Check if it's a permissions error
+                  const isPermissionError = errorMessage.toLowerCase().includes('permission') || 
+                                           errorMessage.toLowerCase().includes('unauthorized') ||
+                                           errorMessage.toLowerCase().includes('forbidden');
+                  
+                  if (isPermissionError) {
+                    console.error("⚠️ PERMISSIONS ISSUE: The app may not have 'message:write' permission.");
+                    console.error("Go to Whop Dashboard → Developer → Your App → Permissions");
+                    console.error("Add 'message:write' permission and re-approve the app installation.");
+                  }
+                  
+                  throw new Error(errorMessage);
+                }
+
+                console.log(`✅ DM sent successfully to ${customer.name}`);
+                console.log(`Message ID: ${message.id}`);
 
                 await storage.updateVideo(video._id, {
                   status: VIDEO_STATUSES.SENT,
-                  whopMessageId: messageId,
+                  whopChatId: channelId,
+                  whopMessageId: message.id,
                   sentAt: new Date(),
                 });
 
@@ -1878,14 +1909,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
 
                 console.log(`🎉 Video ${video.heygenVideoId} successfully sent to ${customer.name}`);
-              } catch (dmError: any) {
-                console.error("❌ DM sending failed:", dmError);
-                const errorMessage = dmError?.message || dmError?.toString() || "Unknown error";
+              } catch (dmApiError: any) {
+                console.error("❌ DM sending failed!");
+                console.error("Error:", dmApiError);
                 
+                // Check if it's a permissions error
+                const errorMessage = dmApiError?.message || dmApiError?.toString() || "Unknown error";
+                const isPermissionError = errorMessage.toLowerCase().includes('permission') || 
+                                         errorMessage.toLowerCase().includes('unauthorized') ||
+                                         errorMessage.toLowerCase().includes('forbidden');
+                
+                if (isPermissionError) {
+                  console.error("⚠️ PERMISSIONS ISSUE: The app may not have 'message:write' permission.");
+                  console.error("Go to Whop Dashboard → Developer → Your App → Permissions");
+                  console.error("Add 'message:write' permission and re-approve the app installation.");
+                }
+                
+                // Mark as FAILED since DM couldn't be sent
                 await storage.updateVideo(video._id, {
                   status: VIDEO_STATUSES.FAILED,
                   errorMessage: `DM delivery failed: ${errorMessage}`,
                 });
+                
+                console.log(`❌ Video ${video.heygenVideoId} marked as FAILED - DM delivery failed. Video URL: ${statusResult.video_url}`);
               }
             } else {
               console.error('❌ Customer or creator not found for video:', video._id);
