@@ -6,7 +6,9 @@ Your AutoWelcome AI app wasn't sending DMs to new members because Whop needs to 
 
 ## Solution
 
-Your app handles Whop's `membership_went_valid` and `app_membership_went_valid` webhook events. Now you need to configure the webhook in your Whop dashboard and debug why it's not being received.
+Your app handles Whop's `membership.went_valid`, `membership.created`, `membership_went_valid`, and `app_membership_went_valid` webhook events. Now you need to configure the webhook in your Whop dashboard and debug why it's not being received.
+
+**Important:** Whop webhook events use **dots** (`.`) in event names, not underscores (`_`). For example: `membership.went_valid` not `membership_went_valid`.
 
 ---
 
@@ -34,7 +36,7 @@ But for production, always use your published Replit HTTPS URL.
 2. Navigate to **Settings** → **Webhooks**
 3. Click **Create Webhook** or **Add Webhook**
 4. Enter your webhook URL: `https://your-replit-url.replit.app/api/whop/webhook`
-5. Select these events: **membership_went_valid** and **app_membership_went_valid**
+5. Select these events: **membership.went_valid** and/or **membership.created** (note the dots, not underscores)
 6. Enable the webhook
 7. Save
 
@@ -49,7 +51,7 @@ curl --request POST \
   --data '{
     "url": "https://your-replit-url.replit.app/api/whop/webhook",
     "enabled": true,
-    "events": ["membership_went_valid", "app_membership_went_valid"]
+    "events": ["membership.went_valid", "membership.created"]
   }'
 ```
 
@@ -57,7 +59,7 @@ curl --request POST \
 
 After setting up:
 1. Use the "Test Webhook" button in your Whop dashboard
-2. Check your server logs for: `Received Whop webhook: membership_went_valid`
+2. Check your server logs for: `📥 Received Whop webhook action: membership.went_valid`
 3. If you see this message, the webhook is working!
 
 ### 4. Test with a Real Member
@@ -92,7 +94,7 @@ When a new member joins, Whop sends this payload:
 
 ```json
 {
-  "action": "membership_went_valid",
+  "action": "membership.went_valid",
   "data": {
     "id": "mem_XXXX",
     "status_reason": "created",
@@ -182,7 +184,8 @@ HEYGEN_WEBHOOK_SECRET=your_heygen_webhook_secret (optional)
 Watch your logs for these key messages:
 
 ✅ **Success indicators:**
-- `Received Whop webhook: membership_went_valid`
+- `📥 Received Whop webhook action: membership.went_valid`
+- `✅ Processing new member webhook event: membership.went_valid`
 - `New member joined: [username]`
 - `HeyGen video generation started for [username]: [video_id]`
 - `Video [video_id] sent to [name] via DM`

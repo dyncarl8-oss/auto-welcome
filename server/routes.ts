@@ -1369,8 +1369,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`📥 Received Whop webhook action: ${action}`);
 
-      // Handle new member joining - supports both membership_went_valid and app_membership_went_valid
-      if (action === "membership_went_valid" || action === "app_membership_went_valid") {
+      // Handle new member joining - supports multiple event formats
+      // Whop uses dots in event names: "membership.went_valid", "membership.created"
+      if (action === "membership.went_valid" || action === "membership.created" || 
+          action === "membership_went_valid" || action === "app_membership_went_valid") {
+        console.log(`✅ Processing new member webhook event: ${action}`);
         console.log(`📋 Webhook data - status_reason: ${data?.status_reason || 'not provided'}, status: ${data?.status}`);
         
         // Log the full data object to debug what fields are available
@@ -1563,6 +1566,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             errorMessage: heygenError instanceof Error ? heygenError.message : "HeyGen API error",
           });
         }
+      } else {
+        console.log(`ℹ️ Received webhook action "${action}" but no handler configured for this event type`);
       }
 
       // Always return 200 to acknowledge receipt (required by Whop)
