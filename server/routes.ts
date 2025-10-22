@@ -570,10 +570,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filePath = path.join(uploadsDir, filename);
       await fs.writeFile(filePath, req.file.buffer);
       
-      // Generate public URL
-      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-        : `http://localhost:5000`;
+      // Generate public URL - detect from request or environment
+      let baseUrl: string;
+      if (process.env.REPLIT_DEV_DOMAIN) {
+        baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+      } else if (process.env.RENDER_EXTERNAL_URL) {
+        baseUrl = process.env.RENDER_EXTERNAL_URL;
+      } else if (req.headers.origin) {
+        baseUrl = req.headers.origin;
+      } else if (req.headers.host) {
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        baseUrl = `${protocol}://${req.headers.host}`;
+      } else {
+        baseUrl = `http://localhost:5000`;
+      }
       const publicUrl = `${baseUrl}/uploads/avatars/${filename}`;
 
       console.log(`✅ Avatar saved to filesystem: ${publicUrl}`);
