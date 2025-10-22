@@ -626,14 +626,6 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                       }}
                       crossOrigin="anonymous"
                     />
-                    {selectedFile && (
-                      <div className="absolute top-2 right-2 z-20">
-                        <Badge className="bg-primary/90 backdrop-blur-sm gap-1">
-                          <Sparkles className="h-3 w-3" />
-                          New
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                 )}
                 
@@ -807,13 +799,13 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 </p>
               </div>
 
-              <div className="pt-4 border-t">
+              <div className="pt-6 border-t flex justify-center">
                 <Button 
                   onClick={handleSaveSettings}
                   disabled={saveSettingsMutation.isPending || uploadAvatarMutation.isPending || uploadAudioMutation.isPending}
-                  className="w-full max-w-md mx-auto"
                   size="lg"
                   data-testid="button-save-settings"
+                  className="min-w-[200px]"
                 >
                   {(saveSettingsMutation.isPending || uploadAvatarMutation.isPending || uploadAudioMutation.isPending) ? (
                     <>
@@ -827,12 +819,12 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                     </>
                   )}
                 </Button>
-                {(selectedFile || selectedAudioFile) && (
-                  <p className="text-xs text-center text-muted-foreground mt-2">
-                    This will upload and save all your changes
-                  </p>
-                )}
               </div>
+              {(selectedFile || selectedAudioFile) && (
+                <p className="text-xs text-center text-muted-foreground mt-2">
+                  This will upload and save all your changes
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
