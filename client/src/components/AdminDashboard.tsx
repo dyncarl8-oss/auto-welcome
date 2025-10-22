@@ -665,7 +665,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                       <Badge variant="outline" className="ml-auto">Ready</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Click "Save" below to upload this avatar
+                      Click "Save All Settings" below to upload this avatar
                     </p>
                   </div>
                 )}
@@ -731,7 +731,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                       <Badge variant="outline" className="ml-auto">New</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Click "Save" to train a new voice model with this audio
+                      Click "Save All Settings" to train a new voice model with this audio
                     </p>
                   </div>
                 )}
@@ -799,13 +799,13 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 </p>
               </div>
 
-              <div className="pt-6 border-t flex justify-center">
+              <div className="pt-4 border-t">
                 <Button 
                   onClick={handleSaveSettings}
                   disabled={saveSettingsMutation.isPending || uploadAvatarMutation.isPending || uploadAudioMutation.isPending}
+                  className="w-full"
                   size="lg"
                   data-testid="button-save-settings"
-                  className="min-w-[200px]"
                 >
                   {(saveSettingsMutation.isPending || uploadAvatarMutation.isPending || uploadAudioMutation.isPending) ? (
                     <>
@@ -815,16 +815,14 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Save
+                      Save All Settings
                     </>
                   )}
                 </Button>
-              </div>
-              {(selectedFile || selectedAudioFile) && (
                 <p className="text-xs text-center text-muted-foreground mt-2">
                   This will upload and save all your changes
                 </p>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
