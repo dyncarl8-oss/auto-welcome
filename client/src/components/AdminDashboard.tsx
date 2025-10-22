@@ -614,19 +614,20 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
               </CardHeader>
               <CardContent className="space-y-4">
                 {(previewUrl || creator?.avatarPhotoUrl) && (
-                  <div className="relative w-40 h-40 rounded-lg overflow-hidden border-2 border-primary/20 mx-auto shadow-xl ring-4 ring-primary/10">
+                  <div className="relative w-40 h-40 rounded-lg overflow-hidden border-2 border-primary/20 mx-auto shadow-xl ring-4 ring-primary/10 bg-muted/30">
                     <img 
                       src={previewUrl || creator?.avatarPhotoUrl || ""} 
                       alt="Avatar preview" 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover relative z-10"
                       data-testid="img-avatar-preview"
+                      onLoad={() => console.log("✅ Avatar image loaded successfully!")}
                       onError={(e) => {
-                        console.error("Avatar image failed to load:", previewUrl || creator?.avatarPhotoUrl);
-                        e.currentTarget.style.display = 'none';
+                        console.error("❌ Avatar image failed to load:", previewUrl || creator?.avatarPhotoUrl);
                       }}
+                      crossOrigin="anonymous"
                     />
                     {selectedFile && (
-                      <div className="absolute top-2 right-2">
+                      <div className="absolute top-2 right-2 z-20">
                         <Badge className="bg-primary/90 backdrop-blur-sm gap-1">
                           <Sparkles className="h-3 w-3" />
                           New
@@ -810,7 +811,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                 <Button 
                   onClick={handleSaveSettings}
                   disabled={saveSettingsMutation.isPending || uploadAvatarMutation.isPending || uploadAudioMutation.isPending}
-                  className="w-full"
+                  className="w-full max-w-md mx-auto"
                   size="lg"
                   data-testid="button-save-settings"
                 >
