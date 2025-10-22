@@ -130,9 +130,11 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
   useEffect(() => {
     if (selectedFile) {
       const objectUrl = URL.createObjectURL(selectedFile);
+      console.log("Setting preview URL from selected file:", objectUrl);
       setPreviewUrl(objectUrl);
       return () => URL.revokeObjectURL(objectUrl);
-    } else if (creator?.avatarPhotoUrl) {
+    } else if (creator?.avatarPhotoUrl && !previewUrl) {
+      console.log("Setting preview URL from creator:", creator.avatarPhotoUrl);
       setPreviewUrl(creator.avatarPhotoUrl);
     }
   }, [selectedFile, creator?.avatarPhotoUrl]);
@@ -670,7 +672,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                       <Badge variant="outline" className="ml-auto">Ready</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Click "Save All Settings" below to upload this avatar
+                      Click "Save" below to upload this avatar
                     </p>
                   </div>
                 )}
@@ -736,7 +738,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                       <Badge variant="outline" className="ml-auto">New</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Click "Save All Settings" to train a new voice model with this audio
+                      Click "Save" to train a new voice model with this audio
                     </p>
                   </div>
                 )}
@@ -820,7 +822,7 @@ export default function AdminDashboard({ userName, experienceId }: AdminDashboar
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Save All Settings
+                      Save
                     </>
                   )}
                 </Button>
